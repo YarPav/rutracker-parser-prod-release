@@ -1,0 +1,29 @@
+version: '2'
+services:
+  node-app:
+    build: .
+    command: node index.js
+    image: node-app
+    volumes:
+      - .:/usr/app/
+      - /usr/app/node_modules
+    depends_on:
+      - mongodb
+    environment:
+      - DATABASE_URL="mongodb://mongodb:27017/rutracker-parser"
+    networks:
+      - node-network
+  mongodb:
+    image: mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - dbdata6:/data/db
+    networks:
+      - node-network
+volumes:
+  dbdata6:
+
+networks:
+  node-network:
+    driver: bridge
