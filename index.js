@@ -9,6 +9,7 @@ import Topic from "./models/topic.js";
 const HOST = 'rutracker.org';
 const URL = `https://${HOST}/`;
 let SESSION_TOKEN = null;
+let FORM_TOKEN = null;
 const MONGO_URL = process.env.DB_URL;
 const TOPICS_ON_PAGE = 50;
 const login = async () => {
@@ -34,6 +35,18 @@ const login = async () => {
         return console.log(new Error('Authentication error'));
     }
 
+}
+
+const getFormToken = async () => {
+    const axiosIndex = await axios.request({
+        url: `${URL}forum/index.php`,
+        responseType: 'arraybuffer',
+        method: 'GET',
+        headers: {
+            Cookie: `bb_session=${SESSION_TOKEN}; path=/; domain=.${HOST}; HttpOnly`,
+        }
+    });
+    return parse(iconv.decode(axiosIndex.data, 'win1251')).querySelector('head script').textContent.split("form_token: '").pop().split("'").shift();
 }
 
 const writeCategories = async () => {
@@ -143,13 +156,13 @@ const writeTopics = async (ids, count) => {
                 torrentLink: topicTorrentLink,
                 lastThanked: []
             });
-            if (process.env.FORM_TOKEN) {
+            if (FORM_TOKEN) {
                 const axiosThankedBody = new URLSearchParams();
                 axiosThankedBody.append('action', 'thx');
                 axiosThankedBody.append('mode', 'get');
                 axiosThankedBody.append('topic_id', topicId);
                 axiosThankedBody.append('t_hash', root.querySelector('div#thx-block').previousElementSibling.previousElementSibling.textContent.split("t_hash: '").pop().split("'").shift());
-                axiosThankedBody.append('form_token', process.env.FORM_TOKEN);
+                axiosThankedBody.append('form_token', FORM_TOKEN);
                 const axiosThanked = await axios({
                     url: `${URL}forum/ajax.php`,
                     method: 'POST',
@@ -188,6 +201,8 @@ const categoryTest = async () => {
         console.log('Connected to database');
         // Получение токена, для эмуляции аутентификации в последующих запросах
         SESSION_TOKEN = await login();
+        // Получение токена, для последующей отправки запросов на получение "последних поблагодаривших"
+        FORM_TOKEN = await getFormToken();
         // Отчистка коллекции, для упрощения тестирования
         await Category.deleteMany({});
         // Получение и запись данных
@@ -206,6 +221,8 @@ const topicTest = async () => {
         console.log('Connected to database');
         // Получение токена, для эмуляции аутентификации в последующих запросах
         SESSION_TOKEN = await login();
+        // Получение токена, для последующей отправки запросов на получение "последних поблагодаривших"
+        FORM_TOKEN = await getFormToken();
         // Отчистка коллекции, для упрощения тестирования
         await Topic.deleteMany({});
         // Получение и запись данных
@@ -217,5 +234,5 @@ const topicTest = async () => {
     }
 };
 
-await categoryTest();
+// await categoryTest();
 await topicTest();
