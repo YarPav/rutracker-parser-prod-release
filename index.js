@@ -12,6 +12,14 @@ let SESSION_TOKEN = null;
 let FORM_TOKEN = null;
 const MONGO_URL = process.env.DB_URL;
 const TOPICS_ON_PAGE = 50;
+
+const getPreviousSibling = (root, userTagName) => {
+    let sibling = root.previousElementSibling;
+    while (sibling) {
+        if (sibling.tagName === userTagName.toUpperCase()) return sibling;
+        sibling = sibling.previousElementSibling;
+    }
+};
 const login = async () => {
     const body = new URLSearchParams();
     body.append('login_username', process.env.LOGIN);
@@ -161,7 +169,7 @@ const writeTopics = async (ids, count) => {
                 axiosThankedBody.append('action', 'thx');
                 axiosThankedBody.append('mode', 'get');
                 axiosThankedBody.append('topic_id', topicId);
-                axiosThankedBody.append('t_hash', root.querySelector('div#thx-block').previousElementSibling.previousElementSibling.textContent.split("t_hash: '").pop().split("'").shift());
+                axiosThankedBody.append('t_hash', getPreviousSibling(root.querySelector('div#thx-block'), 'script').textContent.split("t_hash: '").pop().split("'").shift());
                 axiosThankedBody.append('form_token', FORM_TOKEN);
                 const axiosThanked = await axios({
                     url: `${URL}forum/ajax.php`,
@@ -234,5 +242,5 @@ const topicTest = async () => {
     }
 };
 
-// await categoryTest();
+await categoryTest();
 await topicTest();
